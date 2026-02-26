@@ -1,0 +1,40 @@
+# Environment and secrets
+.env
+.env.local
+*.env
+backend/.env
+backend/token.json
+backend/credentials.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+backend/.venv/
+*.egg-info/
+.eggs/
+
+# Node / Next.js
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+out/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and local
+*.log
+.cache/
