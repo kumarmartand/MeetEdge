@@ -23,7 +23,7 @@ def main():
         print("Install: pip install google-auth-oauthlib google-auth-httplib2 google-api-python-client")
         sys.exit(1)
 
-    print("MeetEdge — Google Calendar OAuth")
+    print("MeetEdge — Google Calendar + Gmail OAuth")
     print("Ensure credentials.json is in the backend folder.")
     print("Get OAuth client credentials from: https://console.cloud.google.com/apis/credentials")
     print()
@@ -31,6 +31,8 @@ def main():
     SCOPES = [
         "https://www.googleapis.com/auth/calendar.readonly",
         "https://www.googleapis.com/auth/calendar.events",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
     ]
 
     if not os.path.exists(creds_path):
@@ -56,7 +58,7 @@ def main():
     print()
     print("Next steps:")
     print("  1. Add GOOGLE_TOKEN_PATH=token.json to backend/.env (optional; default is token.json).")
-    print("  2. Start the backend and use POST /api/v1/calendar/sync to sync events.")
+    print("  2. For Gmail: set GMAIL_PUBSUB_TOPIC and GMAIL_WEBHOOK_SECRET in backend/.env, then POST /api/v1/gmail/setup-watch")
 
 
 if __name__ == "__main__":

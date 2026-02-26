@@ -6,7 +6,7 @@ celery_app = Celery(
     "meetedge",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=["app.tasks.calendar_tasks", "app.tasks.notification_tasks"],
+    include=["app.tasks.calendar_tasks", "app.tasks.notification_tasks", "app.tasks.gmail_tasks"],
 )
 celery_app.conf.update(
     task_serializer="json",

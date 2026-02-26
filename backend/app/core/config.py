@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from_email: str = "noreply@meetedge.local"
     slack_bot_token: str | None = None
+    # Gmail / Pub/Sub (see GMAIL_SETUP.md)
+    gmail_pubsub_topic: str | None = None
+    gmail_webhook_secret: str | None = None
+    google_bot_email: str | None = None
+    google_bot_password: str | None = None
+    audio_device: str | None = None
 
     class Config:
         env_file = ".env"
