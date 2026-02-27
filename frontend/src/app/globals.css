@@ -24,11 +24,14 @@
 }
 
 html {
-  @apply antialiased;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  @apply bg-background text-white min-h-screen;
+  background-color: #0A0E27;
+  color: white;
+  min-height: 100vh;
   font-family: var(--font-inter);
 }
 
@@ -137,7 +140,7 @@ body {
 input:focus,
 select:focus,
 textarea:focus {
-  @apply outline-none;
+  outline: none;
 }
 
 /* Scrollbar enhancements */
@@ -151,9 +154,10 @@ textarea:focus {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border-light rounded-full;
+  background-color: #3F4855;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-light;
+  background-color: #9CA3AF;
 }
