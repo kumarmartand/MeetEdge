@@ -32,20 +32,6 @@ body {
   font-family: var(--font-inter);
 }
 
-/* Smooth scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  @apply bg-surface;
-}
-
-::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-full hover:bg-border-light transition-colors;
-}
-
 /* Global animations */
 @keyframes float-up {
   from {
@@ -145,11 +131,6 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-/* Smooth transitions */
-* {
-  @apply transition-colors duration-200;
 }
 
 /* Focus styles */
