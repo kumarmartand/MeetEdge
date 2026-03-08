@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { Sparkles, Lock, Mail, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = () => {
     setMessage("Google sign-in not configured. Use email for demo.");
@@ -14,6 +16,7 @@ export default function LoginPage() {
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+    setLoading(true);
     try {
       const res = await fetch("/api/v1/auth/login", {
         method: "POST",
@@ -29,72 +32,136 @@ export default function LoginPage() {
       }
     } catch {
       setMessage("Sign-in failed. API may be unavailable.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md rounded-xl bg-surface border border-border p-8 shadow-xl">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-primary">MeetEdge</h1>
-          <p className="text-muted text-sm mt-1">AI-powered meeting intelligence</p>
-        </div>
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+      {/* Animated background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-surface-elevated to-background">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+      </div>
 
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg border border-border bg-surface hover:bg-border/50 text-white font-medium"
-        >
-          <GoogleIcon className="w-5 h-5" />
-          Sign in with Google
-        </button>
-
-        <div className="relative my-6">
-          <span className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </span>
-          <span className="relative flex justify-center text-sm text-muted">Or continue with email</span>
-        </div>
-
-        <form onSubmit={handleEmailSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-muted mb-1">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-background border border-border text-white placeholder-muted focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="you@company.com"
-            />
+      {/* Content */}
+      <div className="relative max-w-md w-full">
+        <div className="glass rounded-2xl border border-border-light/20 p-8 md:p-10 shadow-2xl shadow-primary/20 backdrop-blur-xl">
+          {/* Logo */}
+          <div className="flex items-center justify-center mb-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-xl blur-lg opacity-50 animate-pulse" />
+              <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <Sparkles className="w-7 h-7 text-white" />
+              </div>
+            </div>
           </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-muted mb-1">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-background border border-border text-white placeholder-muted focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="••••••••"
-            />
+
+          {/* Heading */}
+          <div className="text-center mb-8 space-y-2">
+            <h1 className="text-3xl font-bold text-white">
+              Meet<span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Edge</span>
+            </h1>
+            <p className="text-muted-light text-sm">AI-powered meeting intelligence</p>
           </div>
-          {message && (
-            <p className={`text-sm ${message.startsWith("Success") ? "text-green-400" : "text-red-400"}`}>
-              {message}
-            </p>
-          )}
+
+          {/* Google Sign In */}
           <button
-            type="submit"
-            className="w-full py-3 px-4 rounded-lg bg-primary text-white font-medium hover:opacity-90"
+            type="button"
+            onClick={handleGoogleSignIn}
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl glass border border-border-light/30 hover:border-primary/40 text-white font-semibold transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 group"
           >
-            Sign in
+            <GoogleIcon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span>Sign in with Google</span>
           </button>
-        </form>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border-light/20" />
+            </div>
+            <span className="relative flex justify-center text-xs text-muted-light bg-surface-elevated px-2">
+              Or continue with email
+            </span>
+          </div>
+
+          {/* Email Form */}
+          <form onSubmit={handleEmailSubmit} className="space-y-4">
+            {/* Email Input */}
+            <div className="group">
+              <label htmlFor="email" className="block text-xs font-semibold text-muted-light mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-light pointer-events-none group-focus-within:text-primary transition-colors" />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg glass border border-border-light/20 text-white placeholder-muted-light focus:border-primary/40 focus:outline-none transition-all"
+                  placeholder="you@company.com"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password Input */}
+            <div className="group">
+              <label htmlFor="password" className="block text-xs font-semibold text-muted-light mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-light pointer-events-none group-focus-within:text-primary transition-colors" />
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg glass border border-border-light/20 text-white placeholder-muted-light focus:border-primary/40 focus:outline-none transition-all"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Error/Success Message */}
+            {message && (
+              <div className={`p-3 rounded-lg text-sm font-medium ${
+                message.startsWith("Success") 
+                  ? "bg-success/20 border border-success/40 text-success" 
+                  : "bg-error/20 border border-error/40 text-error"
+              }`}>
+                {message}
+              </div>
+            )}
+
+            {/* Sign In Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-primary to-accent text-white font-bold hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 group mt-6"
+            >
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign in
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <p className="text-xs text-muted-light text-center mt-6">
+            Demo credentials: any email • password: test
+          </p>
+        </div>
       </div>
     </div>
   );

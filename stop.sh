@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# MeetEdge — stop backend and frontend (free ports 8000, 3000, 3001, 3002)
+# MeetEdge — stop backend, frontend, Celery, ngrok (free ports 8000, 3000, 3001, 3002)
 set -e
 for port in 8000 3000 3001 3002; do
   if command -v lsof &>/dev/null; then
@@ -12,4 +12,12 @@ for port in 8000 3000 3001 3002; do
     fi
   fi
 done
+# Stop Celery workers/beat (by process name)
+if command -v pkill &>/dev/null; then
+  pkill -f "celery -A app.tasks.celery_app" 2>/dev/null && echo "Stopped Celery" || true
+fi
+# Stop ngrok
+if command -v pkill &>/dev/null; then
+  pkill -f "ngrok http" 2>/dev/null && echo "Stopped ngrok" || true
+fi
 echo "Done. Ports 8000, 3000, 3001, 3002 are free. Run ./run.sh to start the app."

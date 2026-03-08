@@ -25,15 +25,15 @@ export type MeetingStatus = "scheduled" | "live" | "completed" | "failed";
 export function getStatusColor(status: MeetingStatus): string {
   switch (status) {
     case "scheduled":
-      return "bg-primary/20 text-primary border-primary/30";
+      return "glass border border-blue-500/40 text-blue-300 bg-blue-500/10 text-xs font-semibold px-3 py-1.5 rounded-lg";
     case "live":
-      return "bg-green-500/20 text-green-400 border-green-500/30";
+      return "glass border border-green-500/40 text-green-300 bg-green-500/10 text-xs font-semibold px-3 py-1.5 rounded-lg animate-pulse";
     case "completed":
-      return "bg-muted/20 text-muted border-muted/30";
+      return "glass border border-muted-light/40 text-muted-light bg-muted-light/5 text-xs font-semibold px-3 py-1.5 rounded-lg";
     case "failed":
-      return "bg-red-500/20 text-red-400 border-red-500/30";
+      return "glass border border-red-500/40 text-red-300 bg-red-500/10 text-xs font-semibold px-3 py-1.5 rounded-lg";
     default:
-      return "bg-muted/20 text-muted border-muted/30";
+      return "glass border border-muted-light/40 text-muted-light bg-muted-light/5 text-xs font-semibold px-3 py-1.5 rounded-lg";
   }
 }
 
