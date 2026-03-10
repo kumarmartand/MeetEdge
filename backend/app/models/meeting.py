@@ -1,6 +1,9 @@
 from datetime import datetime
 from sqlalchemy import String, DateTime, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON as SAJSON
+
+# Use generic JSON type for portability with SQLite tests.
+JSON_TYPE = SAJSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
@@ -20,8 +23,9 @@ class Meeting(Base):
     transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
     transcript_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    summary_key_points: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    summary_key_points: Mapped[dict | None] = mapped_column(JSON_TYPE, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    recall_bot_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 

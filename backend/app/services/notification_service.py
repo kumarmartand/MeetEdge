@@ -5,8 +5,13 @@ from app.models.meeting import Meeting
 logger = structlog.get_logger()
 
 
+import zoneinfo
+
 def _build_reminder_email(meeting: Meeting) -> str:
-    start = meeting.start_time.strftime("%A, %B %d at %I:%M %p") if meeting.start_time else ""
+    start = ""
+    if meeting.start_time:
+        ist_time = meeting.start_time.astimezone(zoneinfo.ZoneInfo("Asia/Kolkata"))
+        start = ist_time.strftime("%A, %B %d at %I:%M %p IST")
     join = f'<a href="{meeting.meet_url}" style="display:inline-block;padding:12px 24px;background:#0066CC;color:#fff;text-decoration:none;border-radius:6px;">Join Meeting</a>' if meeting.meet_url else ""
     return f"""
 <!DOCTYPE html>
@@ -19,6 +24,28 @@ def _build_reminder_email(meeting: Meeting) -> str:
   <h2>{meeting.title}</h2>
   <p><strong>{start}</strong></p>
   <p>{join}</p>
+  <p style="color:#64748B;font-size:12px;">— MeetEdge by Secure Edge Pvt Ltd</p>
+</div>
+</body>
+</html>
+"""
+
+
+def _build_bot_joining_email(meeting: Meeting) -> str:
+    start = ""
+    if meeting.start_time:
+        ist_time = meeting.start_time.astimezone(zoneinfo.ZoneInfo("Asia/Kolkata"))
+        start = ist_time.strftime("%A, %B %d at %I:%M %p IST")
+    return f"""
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>MeetEdge Bot Joining</title></head>
+<body style="font-family:system-ui,sans-serif;background:#0F172A;color:#f4f4f5;padding:24px;">
+<div style="max-width:560px;margin:0 auto;">
+  <h1 style="color:#0066CC;">MeetEdge</h1>
+  <p>The MeetEdge bot will join your upcoming meeting to take notes and capture action items:</p>
+  <h2>{meeting.title}</h2>
+  <p><strong>{start}</strong></p>
   <p style="color:#64748B;font-size:12px;">— MeetEdge by Secure Edge Pvt Ltd</p>
 </div>
 </body>
@@ -105,6 +132,19 @@ class NotificationService:
             )
         except Exception as e:
             logger.error("send_summary_ready_failed", meeting_id=meeting.id, error=str(e), exc_info=True)
+
+    async def send_bot_joining_email(self, meeting: Meeting, attendee_emails: list[str]) -> None:
+        if not attendee_emails:
+            return
+        try:
+            body = _build_bot_joining_email(meeting)
+            await self.send_email(
+                attendee_emails,
+                f"MeetEdge Bot will join: {meeting.title}",
+                body,
+            )
+        except Exception as e:
+            logger.error("send_bot_joining_email_failed", meeting_id=meeting.id, error=str(e), exc_info=True)
 
     async def send_slack_message(self, channel: str, text: str, blocks: list | None = None) -> None:
         if not self.settings.slack_bot_token:

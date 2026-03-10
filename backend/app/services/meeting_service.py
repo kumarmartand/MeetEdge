@@ -55,7 +55,10 @@ class MeetingService:
         self.db.add(meeting)
         await self.db.flush()
         await self.db.refresh(meeting)
-        return meeting
+        # Return a meeting instance with relationships eagerly loaded so
+        # FastAPI's response serialization won't attempt lazy IO outside
+        # of the async engine/greenlet context.
+        return await self.get_by_id(meeting.id)
 
     async def update(self, meeting_id: int, data: MeetingUpdate) -> Meeting | None:
         meeting = await self.get_by_id(meeting_id)
@@ -65,7 +68,7 @@ class MeetingService:
             setattr(meeting, k, v)
         await self.db.flush()
         await self.db.refresh(meeting)
-        return meeting
+        return await self.get_by_id(meeting.id)
 
     async def delete(self, meeting_id: int) -> bool:
         meeting = await self.get_by_id(meeting_id)

@@ -36,6 +36,14 @@ if [ ! -d .venv ]; then
 fi
 .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
+
+echo "Starting Celery worker and beat..."
+.venv/bin/celery -A app.tasks.celery_app worker --loglevel=info &
+CELERY_WORKER_PID=$!
+
+.venv/bin/celery -A app.tasks.celery_app beat --loglevel=info &
+CELERY_BEAT_PID=$!
+
 cd "$ROOT"
 
 # 3. Frontend
@@ -51,4 +59,4 @@ echo "Backend:  http://localhost:8000  (docs: http://localhost:8000/docs)"
 echo "Frontend: http://localhost:3000"
 echo ""
 echo "Press Ctrl+C to stop both."
-wait $BACKEND_PID $FRONTEND_PID 2>/dev/null || true
+wait $BACKEND_PID $CELERY_WORKER_PID $CELERY_BEAT_PID $FRONTEND_PID 2>/dev/null || true

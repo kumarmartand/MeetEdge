@@ -1,0 +1,98 @@
+services:
+  # 1. PostgreSQL Database
+  - type: pserv
+    name: meetedge-db
+    env: docker
+    plan: free
+    dockerCommand: postgres -c shared_preload_libraries=pg_stat_statements
+  
+  # 2. Redis instances
+  - type: redis
+    name: meetedge-redis
+    plan: free
+    ipAllowList: []
+  
+  # 3. FastAPI Backend
+  - type: web
+    name: meetedge-api
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    plan: starter
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: meetedge-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString
+      - key: DEBUG
+        value: "false"
+
+  # 4. Celery Worker (Processes audio, joins meetings)
+  - type: worker
+    name: meetedge-celery-worker
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: celery -A app.tasks.celery_app worker --loglevel=info
+    plan: starter
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: meetedge-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString
+
+  # 5. Celery Beat (Scheduled tasks)
+  - type: worker
+    name: meetedge-celery-beat
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: celery -A app.tasks.celery_app beat --loglevel=info
+    plan: starter
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: meetedge-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: meetedge-redis
+          property: connectionString

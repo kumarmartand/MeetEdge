@@ -94,7 +94,7 @@ class CalendarService:
             logger.exception("fetch_upcoming_events_error", error=str(e))
             return []
 
-    async def _upsert_meeting(self, event: dict) -> Meeting:
+    async def _upsert_meeting(self, event: dict) -> tuple[Meeting, bool]:
         start_info = event.get("start") or {}
         end_info = event.get("end") or {}
         start_str = start_info.get("dateTime") or start_info.get("date")
@@ -102,6 +102,11 @@ class CalendarService:
         start_dt = parse_google_datetime(start_str)
         end_dt = parse_google_datetime(end_str)
         external_id = event.get("id")
+        
+        existing_stmt = select(Meeting.id).where(Meeting.external_id == external_id)
+        existing_result = await self.db.execute(existing_stmt)
+        is_new = existing_result.scalar_one_or_none() is None
+
         title = event.get("summary") or "Untitled"
         meet_url = self._extract_meet_url(event)
         stmt = insert(Meeting).values(
@@ -126,7 +131,7 @@ class CalendarService:
         result = await self.db.execute(stmt)
         row = result.scalar_one()
         await self.db.flush()
-        return row
+        return row, is_new
 
     async def _upsert_attendees(self, meeting: Meeting, attendees: list[dict]) -> None:
         emails = {a.get("email") for a in attendees if a.get("email")}
@@ -159,9 +164,17 @@ class CalendarService:
         skipped = 0
         for event in events:
             try:
-                meeting = await self._upsert_meeting(event)
+                meeting, is_new = await self._upsert_meeting(event)
                 attendees = event.get("attendees") or []
                 await self._upsert_attendees(meeting, attendees)
+                
+                if is_new and meeting.meet_url:
+                    from app.services.notification_service import NotificationService
+                    emails = [a.get("email") for a in attendees if a.get("email")]
+                    if emails:
+                        notif = NotificationService()
+                        await notif.send_bot_joining_email(meeting, emails)
+                        
                 synced += 1
             except Exception as e:
                 logger.warning("sync_meeting_skip", event_id=event.get("id"), error=str(e))

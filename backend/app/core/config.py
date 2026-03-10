@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     google_bot_email: str | None = None
     google_bot_password: str | None = None
     audio_device: str | None = None
+    recall_api_key: str | None = None
+    openai_api_key: str | None = None
 
     class Config:
         env_file = ".env"
