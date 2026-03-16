@@ -22,6 +22,8 @@ def main():
     from app.models.meeting import Meeting
     from app.models.attendee import Attendee
     from app.models.action_item import ActionItem
+    from app.models.user import User
+    from app.core.security import get_password_hash
     from app.core.database import SessionLocal
 
     Session = SessionLocal
@@ -85,6 +87,20 @@ def main():
         ["Root cause doc", "Action items", "Prevent recurrence"],
     ]
     assignees = ["alice@example.com", "bob@example.com", "carol@example.com", "dave@example.com"]
+
+    print("Seeding Users...")
+    for i in range(1, 6):
+        email = f"user{i}@example.com"
+        exists = session.query(User).filter(User.email == email).first()
+        if not exists:
+            user = User(
+                email=email,
+                hashed_password=get_password_hash("password123"),
+                is_active=True
+            )
+            session.add(user)
+    session.commit()
+    print("Seeded 5 default users (password: password123).")
 
     for i, (title, status) in enumerate(zip(titles, statuses)):
         start_time, end_time = meeting_times[i]

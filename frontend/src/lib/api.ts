@@ -6,10 +6,24 @@
 const BASE = "/api/v1";
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  if (typeof document !== "undefined") {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("meetedge_token="))
+      ?.split("=")[1];
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
   const res = await fetch(`${BASE}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...headers,
       ...options.headers,
     },
   });
@@ -46,6 +60,10 @@ export const meetings = {
     request<import("@/types/meeting").Meeting>(`/meetings/${id}`, {
       method: "PATCH",
       body: JSON.stringify(body),
+    }),
+  leaveBot: (id: number) =>
+    request<import("@/types/meeting").Meeting>(`/meetings/${id}/bot/leave`, {
+      method: "POST",
     }),
   delete: (id: number) => request<void>(`/meetings/${id}`, { method: "DELETE" }),
 };

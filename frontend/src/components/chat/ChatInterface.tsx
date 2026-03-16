@@ -38,7 +38,7 @@ export default function ChatInterface() {
                   key={q}
                   type="button"
                   onClick={() => sendMessage(q)}
-                  className="px-3 py-2 rounded-lg bg-background border border-border hover:bg-border text-sm text-left max-w-xs"
+                  className="px-3 py-2 rounded-lg bg-surface border border-border hover:bg-border text-sm text-center max-w-xs transition-colors"
                 >
                   {q}
                 </button>

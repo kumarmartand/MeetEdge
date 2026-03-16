@@ -170,10 +170,14 @@ class CalendarService:
                 
                 if is_new and meeting.meet_url:
                     from app.services.notification_service import NotificationService
-                    emails = [a.get("email") for a in attendees if a.get("email")]
-                    if emails:
+                    
+                    creator_email = event.get("creator", {}).get("email")
+                    organizer_email = event.get("organizer", {}).get("email")
+                    target_email = organizer_email or creator_email
+                    
+                    if target_email:
                         notif = NotificationService()
-                        await notif.send_bot_joining_email(meeting, emails)
+                        await notif.send_bot_joining_email(meeting, [target_email])
                         
                 synced += 1
             except Exception as e:

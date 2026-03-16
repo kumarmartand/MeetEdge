@@ -22,13 +22,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${outfit.variable} bg-background text-white min-h-screen flex font-sans`}>
         <Providers>
-          <Sidebar />
-          <div className="flex-1 flex flex-col min-w-0">
-            <Header />
-            <main className="flex-1 p-6 overflow-auto bg-gradient-to-b from-background via-background to-surface-elevated/20">
-              {children}
-            </main>
-          </div>
+          {children}
         </Providers>
       </body>
     </html>

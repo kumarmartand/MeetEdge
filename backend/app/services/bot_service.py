@@ -1,3 +1,4 @@
+import asyncio
 import structlog
 import httpx
 from datetime import datetime, timezone, timedelta
@@ -88,6 +89,26 @@ class BotService:
                 # Update status back to scheduled so it can be retried or marked failed
                 return None
 
+    async def remove_bot(self, bot_id: str):
+        """Requests the bot to leave the meeting immediately."""
+        if not self.api_key:
+            return False
+            
+        logger.info("bot_removing_recall_bot", bot_id=bot_id)
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                # The endpoint to make a bot leave is POST /api/v1/bot/{id}/leave
+                endpoint_url = f"{self.base_url}/{bot_id}/leave_call"
+                response = await client.post(endpoint_url, headers=self.headers, timeout=10.0)
+                response.raise_for_status()
+                logger.info("bot_removed_successfully", bot_id=bot_id)
+                return True
+            except httpx.HTTPError as e:
+                error_body = getattr(e.response, 'text', '') if hasattr(e, 'response') else ""
+                logger.error("bot_removal_failed", bot_id=bot_id, error=str(e), body=error_body)
+                return False
+
     async def fetch_transcript(self, bot_id: str, meeting_id: int):
         """Fetches the transcript for a completed bot and saves it."""
         if not self.api_key:
@@ -98,10 +119,21 @@ class BotService:
         
         async with httpx.AsyncClient() as client:
             try:
-                response = await client.get(transcript_url, headers=self.headers, timeout=10.0)
-                response.raise_for_status()
-                data = response.json()
-                
+                # Recall.ai might take a few seconds to process the transcript after the bot leaves.
+                # We'll try up to 3 times with a short delay.
+                data = {}
+                for attempt in range(3):
+                    response = await client.get(transcript_url, headers=self.headers, timeout=10.0)
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    if data.get("transcripts"):
+                        break
+                    
+                    if attempt < 2:
+                        logger.info("bot_transcript_not_ready_retrying", bot_id=bot_id, attempt=attempt+1)
+                        await asyncio.sleep(5)
+
                 # Format transcript from chunks
                 # Recall API returns a list of dictionaries in 'transcripts'
                 transcripts_list = data.get("transcripts", [])
@@ -191,7 +223,10 @@ class BotService:
                                 await session.execute(
                                     update(Meeting)
                                     .where(Meeting.id == meeting_id)
-                                    .values(summary=summary, summary_key_points=key_points)
+                                    .values(
+                                        summary=summary, 
+                                        summary_key_points={"key_points": key_points, "decisions": [], "follow_ups": []}
+                                    )
                                 )
 
                                 # Insert action items into DB (avoid duplicates)

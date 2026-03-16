@@ -3,8 +3,9 @@ from app.core.deps import DbSession
 from app.core.database import AsyncSessionLocal
 from app.services.calendar_service import CalendarService
 from app.services.meeting_service import MeetingService
+from app.core.deps import get_current_user
 
-router = APIRouter(prefix="/calendar", tags=["calendar"])
+router = APIRouter(prefix="/calendar", tags=["calendar"], dependencies=[Depends(get_current_user)])
 
 
 @router.post("/sync")

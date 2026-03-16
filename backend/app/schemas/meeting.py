@@ -39,6 +39,7 @@ class MeetingResponse(MeetingBase):
     google_event_id: str | None
     status: str
     meet_url: str | None
+    recall_bot_id: str | None = None
     transcript_path: str | None
     summary: str | None
     summary_key_points: dict | None

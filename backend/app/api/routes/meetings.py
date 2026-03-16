@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from app.core.deps import DbSession
 from app.schemas.meeting import (
     MeetingResponse,
@@ -9,9 +9,10 @@ from app.schemas.meeting import (
 from app.schemas.attendee import AttendeeSchema
 from app.schemas.action_item import ActionItemResponse
 from app.services.meeting_service import MeetingService
+from app.services.bot_service import BotService
+from app.core.deps import get_current_user
 
-router = APIRouter(prefix="/meetings", tags=["meetings"])
-
+router = APIRouter(prefix="/meetings", tags=["meetings"], dependencies=[Depends(get_current_user)])
 
 @router.get("", response_model=list[MeetingResponse])
 async def list_meetings(
@@ -101,4 +102,26 @@ async def store_summary(meeting_id: int, payload: SummaryStorePayload, db: DbSes
     }
     await db.commit()
     await db.refresh(meeting)
+    return {"ok": True}
+
+@router.post("/{meeting_id}/bot/leave")
+async def manual_leave_bot(meeting_id: int, db: DbSession, background_tasks: BackgroundTasks):
+    svc = MeetingService(db)
+    meeting = await svc.get_by_id(meeting_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+        
+    if not meeting.recall_bot_id:
+        raise HTTPException(status_code=400, detail="No active bot for this meeting")
+        
+    bot_service = BotService()
+    bot_id = meeting.recall_bot_id
+    success = await bot_service.remove_bot(bot_id)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to remove bot")
+        
+    # Trigger transcript fetching in the background after a short delay
+    background_tasks.add_task(bot_service.fetch_transcript, bot_id, meeting_id)
+    
     return {"ok": True}

@@ -6,16 +6,36 @@ import { formatDate, formatDuration, getStatusColor, getInitials } from "@/lib/u
 import SummaryPanel from "@/components/meetings/SummaryPanel";
 import TranscriptViewer from "@/components/meetings/TranscriptViewer";
 import { useState } from "react";
-import { ExternalLink } from "lucide-react";
-import { actionItems as actionItemsApi } from "@/lib/api";
+import { ExternalLink, XSquare } from "lucide-react";
+import { actionItems as actionItemsApi, meetings as meetingsApi } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 const TABS = ["Summary", "Transcript", "Action Items", "Attendees"];
 
 export default function MeetingDetailPage() {
   const params = useParams();
   const id = String(params.id);
-  const { meeting, isLoading } = useMeeting(id);
+  const router = useRouter();
+  const { meeting, isLoading, mutate } = useMeeting(id);
   const [activeTab, setActiveTab] = useState(0);
+  const [isStoppingBot, setIsStoppingBot] = useState(false);
+
+  const handleStopBot = async () => {
+    if (!meeting || isStoppingBot) return;
+    try {
+      setIsStoppingBot(true);
+      await meetingsApi.leaveBot(meeting.id);
+      // Wait a moment for webhooks to process and refresh data
+      setTimeout(() => {
+        mutate();
+        router.refresh();
+      }, 1500);
+    } catch (err) {
+      console.error("Failed to stop bot:", err);
+    } finally {
+      setIsStoppingBot(false);
+    }
+  };
 
   if (isLoading || !meeting) {
     return (
@@ -49,16 +69,27 @@ export default function MeetingDetailPage() {
             {meeting.status}
           </span>
         </div>
-        {meeting.meet_url && (
-          <a
-            href={meeting.meet_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:opacity-90"
-          >
-            Join Meeting <ExternalLink className="w-4 h-4" />
-          </a>
-        )}
+        <div className="flex items-center gap-3">
+          {meeting.status === "in_progress" && meeting.recall_bot_id && (
+            <button
+              onClick={handleStopBot}
+              disabled={isStoppingBot}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/90 text-white font-medium hover:bg-red-600 disabled:opacity-50 transition-colors"
+            >
+              {isStoppingBot ? "Stopping..." : "Stop Bot"} <XSquare className="w-4 h-4" />
+            </button>
+          )}
+          {meeting.meet_url && (
+            <a
+              href={meeting.meet_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:opacity-90 transition-opacity"
+            >
+              Join Meeting <ExternalLink className="w-4 h-4" />
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="border-b border-border">
@@ -68,9 +99,8 @@ export default function MeetingDetailPage() {
               key={label}
               type="button"
               onClick={() => setActiveTab(i)}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg ${
-                activeTab === i ? "bg-surface border border-border border-b-0 -mb-px text-primary" : "text-muted hover:text-white"
-              }`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg ${activeTab === i ? "bg-surface border border-border border-b-0 -mb-px text-primary" : "text-muted hover:text-white"
+                }`}
             >
               {label}
             </button>

@@ -20,25 +20,34 @@ settings = get_settings()
 class LLMService:
     def __init__(self):
         self._available = False
-        self.openai = None
-        self.api_key = getattr(settings, "openai_api_key", None) or None
+        self.client = None
+        self.is_groq = False
+        
+        import os
+        self.groq_api_key = getattr(settings, "groq_api_key", None) or os.environ.get("GROQ_API_KEY")
+        self.openai_api_key = getattr(settings, "openai_api_key", None) or os.environ.get("OPENAI_API_KEY")
+        
         try:
-            import openai  # type: ignore
-            self.openai = openai
-            # prefer explicit settings key, else rely on env-based key
-            if self.api_key:
-                self.openai.api_key = self.api_key
-            elif getattr(self.openai, "api_key", None):
-                # already set
-                pass
-            else:
-                # not configured
-                self.api_key = None
-
-            if self.api_key or getattr(self.openai, "api_key", None):
+            from openai import OpenAI  # type: ignore
+            
+            if self.groq_api_key:
+                self.client = OpenAI(
+                    api_key=self.groq_api_key,
+                    base_url="https://api.groq.com/openai/v1"
+                )
+                self.is_groq = True
                 self._available = True
-        except Exception:
-            self.openai = None
+            elif self.openai_api_key:
+                self.client = OpenAI(api_key=self.openai_api_key)
+                self._available = True
+            else:
+                # Provide a descriptive error if neither are found but client is configured via env
+                if os.environ.get("OPENAI_API_KEY"):
+                    self.client = OpenAI()
+                    self._available = True
+        except Exception as e:
+            logger.error("llm_service_init_failed", error=str(e))
+            self.client = None
             self._available = False
 
     @property
@@ -105,20 +114,19 @@ class LLMService:
                 {"role": "user", "content": user_prompt},
             ]
 
-            # Prefer a capable but cost-effective model if available
-            model = "gpt-3.5-turbo"
-            try:
-                # If the OpenAI package exposes capability to check model availability, choose gpt-4 when configured.
-                if getattr(self.openai, "api_key", None) and getattr(settings, "use_gpt4", False):
-                    model = "gpt-4"
-            except Exception:
-                pass
+            # Determine model based on provider
+            if self.is_groq:
+                model = "llama-3.1-8b-instant"  # Fast, free model for Groq
+            else:
+                model = "gpt-4o-mini"
+                if getattr(settings, "use_gpt4", False):
+                    model = "gpt-4-turbo"
 
-            resp = self.openai.ChatCompletion.create(
+            resp = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=0.0,
-                max_tokens=800,
+                max_tokens=1000,
             )
 
             content = resp.choices[0].message.content if resp and resp.choices else ""
@@ -138,9 +146,59 @@ class LLMService:
                 if isinstance(ai, dict):
                     text = ai.get("text") or ai.get("action") or ""
                     assignee = ai.get("assignee_email") if ai.get("assignee_email") else None
-                    normalized_actions.append({"text": text, "assignee_email": assignee})
+                    if text:
+                        normalized_actions.append({"text": text, "assignee_email": assignee})
 
             return {"summary": summary, "key_points": key_points, "action_items": normalized_actions}
         except Exception as e:
             logger.exception("llm_summarize_failed", exc_info=e)
+            return None
+
+    def answer_question(self, query: str, history: List[Dict[str, str]] | None, meetings_context: str) -> Optional[str]:
+        """Answers a user's question based on their meeting history."""
+        if not self.available:
+            return None
+
+        history = history or []
+
+        system_prompt = (
+            "You are an AI assistant for MeetEdge, an intelligent meeting notes app. "
+            "You help users answer questions about their past meetings, decisions made, follow-ups, and transcripts. "
+            "Be concise, helpful, and directly reference the provided meeting context if applicable.\n\n"
+            "CONTEXT OF PAST MEETINGS:\n"
+            f"{meetings_context}\n\n"
+            "If the answer cannot be found in the provided context, politely inform the user."
+        )
+
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Append history
+        for msg in history[-10:]:  # Keep last 10 messages for token limits
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ["user", "assistant"] and content:
+                messages.append({"role": role, "content": content})
+
+        # Append current user query
+        messages.append({"role": "user", "content": query})
+
+        try:
+            if self.is_groq:
+                model = "llama-3.1-8b-instant"
+            else:
+                model = "gpt-4o-mini"
+                if getattr(settings, "use_gpt4", False):
+                    model = "gpt-4-turbo"
+
+            resp = self.client.chat.completions.create(
+                model=model,
+                messages=messages,
+                temperature=0.3,
+                max_tokens=800,
+            )
+
+            content = resp.choices[0].message.content if resp and resp.choices else ""
+            return content.strip()
+        except Exception as e:
+            logger.exception("llm_chat_failed", exc_info=e)
             return None

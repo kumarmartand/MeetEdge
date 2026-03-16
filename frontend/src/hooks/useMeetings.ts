@@ -14,12 +14,12 @@ export function useMeetings(params?: { status?: string; search?: string; limit?:
 
 export function useMeeting(id: string | number) {
   const numId = typeof id === "string" ? parseInt(id, 10) : id;
-  const { data: meeting, isLoading, error } = useQuery({
+  const { data: meeting, isLoading, error, refetch } = useQuery({
     queryKey: ["meeting", numId],
     queryFn: () => meetingsApi.get(numId),
     enabled: !Number.isNaN(numId) && numId > 0,
   });
-  return { meeting, isLoading, error };
+  return { meeting, isLoading, error, mutate: refetch };
 }
 
 export function useSyncCalendar() {

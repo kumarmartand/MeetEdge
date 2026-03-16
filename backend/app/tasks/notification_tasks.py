@@ -18,8 +18,8 @@ def send_upcoming_reminders():
     async def run():
         try:
             now = utcnow()
-            start = now + timedelta(minutes=14)
-            end = now + timedelta(minutes=16)
+            start = now + timedelta(minutes=4)
+            end = now + timedelta(minutes=6)
             async with AsyncSessionLocal() as session:
                 stmt = (
                     select(Meeting)

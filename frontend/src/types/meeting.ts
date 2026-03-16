@@ -29,6 +29,7 @@ export interface Meeting {
   google_event_id: string | null;
   status: string;
   meet_url: string | null;
+  recall_bot_id?: string | null;
   transcript: string | null;
   transcript_path: string | null;
   summary: string | null;

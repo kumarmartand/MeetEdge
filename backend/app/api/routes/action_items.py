@@ -6,8 +6,9 @@ from sqlalchemy import select
 from app.core.deps import DbSession
 from app.models.action_item import ActionItem
 from app.schemas.action_item import ActionItemResponse, ActionItemCreate, ActionItemUpdate
+from app.core.deps import get_current_user
 
-router = APIRouter(prefix="/action-items", tags=["action_items"])
+router = APIRouter(prefix="/action-items", tags=["action_items"], dependencies=[Depends(get_current_user)])
 
 
 @router.get("", response_model=list[ActionItemResponse])
